@@ -99,7 +99,7 @@ rawhide-2026-07-15-0600
 ```
 
 - **New tag on each release** — each build is a unique, immutable snapshot.
-- **Older releases are deleted automatically** — only the last 3 months of builds are kept.
+- **Older releases are deleted automatically** — only the last month of builds is kept.
 - **Manual builds** — the maintainer can trigger a build at any time from the Actions tab. A same-day build gets a unique time-stamped tag (e.g. `rawhide-2026-07-15-1430`).
 
 If you downloaded a `.wsl` file a while ago, just run `sudo dnf5 upgrade` after first boot to get the latest packages.

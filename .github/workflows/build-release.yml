@@ -50,13 +50,13 @@ jobs:
             const rawhideReleases = releases.data
               .filter(r => r.tag_name.startsWith('rawhide-'));
             const cutoff = new Date();
-            cutoff.setMonth(cutoff.getMonth() - 3);
+            cutoff.setMonth(cutoff.getMonth() - 1);
             let deleted = 0;
             for (const release of rawhideReleases) {
-              const parts = release.tag_name.replace('rawhide-', '').split('-');
-              const dateStr = parts[0];
-              const [y, m, d] = dateStr.split('-').map(Number);
-              const releaseDate = new Date(y, m - 1, d);
+              const match = release.tag_name.match(/^rawhide-(\d{4})-(\d{2})-(\d{2})/);
+              if (!match) continue;
+              const [, y, m, d] = match;
+              const releaseDate = new Date(Date.UTC(Number(y), Number(m) - 1, Number(d)));
               if (releaseDate < cutoff) {
                 await github.rest.repos.deleteRelease({
                   owner: context.repo.owner,
@@ -71,4 +71,4 @@ jobs:
                 deleted++;
               }
             }
-            console.log(`Cleaned up ${deleted} releases older than 3 months`);
+            console.log(`Cleaned up ${deleted} releases older than 1 month`);
