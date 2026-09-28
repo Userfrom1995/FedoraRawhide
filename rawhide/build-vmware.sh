@@ -103,26 +103,33 @@ $SUDO chmod 0755 "$EXPORT_DIR/etc/profile.d/welcome-vmware.sh" 2>/dev/null || tr
 
 # Setup default fedora user with password fedora and sudo rights
 echo "Setting up default 'fedora' user..."
-$SUDO chroot "$EXPORT_DIR" useradd -m -u 1000 -G wheel -s /bin/bash fedora 2>/dev/null || true
-echo "fedora:fedora" | $SUDO chroot "$EXPORT_DIR" chpasswd
-echo "root:fedora" | $SUDO chroot "$EXPORT_DIR" chpasswd
+FEDORA_PASS_HASH="$(openssl passwd -6 fedora)"
+$SUDO chroot "$EXPORT_DIR" useradd -m -u 1000 -G wheel -s /bin/bash -p "$FEDORA_PASS_HASH" fedora 2>/dev/null || \
+$SUDO chroot "$EXPORT_DIR" usermod -p "$FEDORA_PASS_HASH" -aG wheel fedora
+$SUDO chroot "$EXPORT_DIR" usermod -p "$FEDORA_PASS_HASH" root
 
-# Enable required system services
+# Enable required system services using offline root
 echo "Enabling system services..."
-$SUDO chroot "$EXPORT_DIR" systemctl enable NetworkManager.service
-$SUDO chroot "$EXPORT_DIR" systemctl enable vmtoolsd.service 2>/dev/null || \
-$SUDO chroot "$EXPORT_DIR" systemctl enable open-vm-tools.service 2>/dev/null || true
-$SUDO chroot "$EXPORT_DIR" systemctl enable systemd-resolved.service
+$SUDO systemctl --root="$EXPORT_DIR" enable NetworkManager.service 2>/dev/null || true
+$SUDO systemctl --root="$EXPORT_DIR" enable vmtoolsd.service 2>/dev/null || \
+$SUDO systemctl --root="$EXPORT_DIR" enable open-vm-tools.service 2>/dev/null || true
+$SUDO systemctl --root="$EXPORT_DIR" enable systemd-resolved.service 2>/dev/null || true
 
 # Generate generic (no-hostonly) initramfs with VMware storage/network drivers
 echo "Generating generic initramfs for VMware..."
-$SUDO mount -t proc proc "$EXPORT_DIR/proc"
-$SUDO mount -t sysfs sys "$EXPORT_DIR/sys"
-$SUDO mount --bind /dev "$EXPORT_DIR/dev"
+if $SUDO mount -t proc proc "$EXPORT_DIR/proc" 2>/dev/null; then
+    $SUDO mount -t sysfs sys "$EXPORT_DIR/sys" 2>/dev/null || true
+    $SUDO mount --bind /dev "$EXPORT_DIR/dev" 2>/dev/null || true
 
-$SUDO chroot "$EXPORT_DIR" dracut --force --no-hostonly "/boot/initramfs-${KVER}.img" "$KVER"
+    $SUDO chroot "$EXPORT_DIR" dracut --force --no-hostonly "/boot/initramfs-${KVER}.img" "$KVER"
 
-$SUDO umount "$EXPORT_DIR/dev" "$EXPORT_DIR/sys" "$EXPORT_DIR/proc"
+    $SUDO umount "$EXPORT_DIR/dev" 2>/dev/null || true
+    $SUDO umount "$EXPORT_DIR/sys" 2>/dev/null || true
+    $SUDO umount "$EXPORT_DIR/proc" 2>/dev/null || true
+else
+    echo "Notice: Container lacks mount permissions. Running dracut via --sysroot..."
+    $SUDO dracut --sysroot "$EXPORT_DIR" --kver "$KVER" --force --no-hostonly "$EXPORT_DIR/boot/initramfs-${KVER}.img"
+fi
 
 # Generate filesystem UUIDs and /etc/fstab
 echo "Generating fstab..."
