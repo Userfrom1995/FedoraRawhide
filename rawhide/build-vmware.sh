@@ -8,7 +8,6 @@ WORK_DIR="$SCRIPT_DIR/build-vmware-tmp"
 EXPORT_DIR="$WORK_DIR/rootfs"
 OVERLAY_DIR="$SCRIPT_DIR/vmware-overlay"
 OUTPUT_OVA="$SCRIPT_DIR/Fedora-Rawhide-VMware.ova"
-OUTPUT_VMDK="$SCRIPT_DIR/Fedora-Rawhide-VMware.vmdk"
 RELEASE_VER="rawhide"
 OWNER_UID="$(id -u)"
 OWNER_GID="$(id -g)"
@@ -216,18 +215,14 @@ echo "Writing partitions into raw disk..."
 dd if="$ESP_IMG" of="$RAW_DISK" bs=1M seek=1 conv=notrunc,sparse status=none
 dd if="$ROOT_IMG" of="$RAW_DISK" bs=1M seek=513 conv=notrunc,sparse status=none
 
-# Convert to Stream-Optimized VMDK
-echo "Converting raw disk to stream-optimized VMDK: $OUTPUT_VMDK..."
-rm -f "$OUTPUT_VMDK"
-qemu-img convert -O vmdk -o subformat=streamOptimized "$RAW_DISK" "$OUTPUT_VMDK"
-$SUDO chown "$OWNER_UID:$OWNER_GID" "$OUTPUT_VMDK"
-chmod 0644 "$OUTPUT_VMDK"
-
 # Package into OVA appliance
 echo "Packaging OVA appliance: $OUTPUT_OVA..."
 OVA_STAGING="$WORK_DIR/ova_stage"
 mkdir -p "$OVA_STAGING"
-cp "$OUTPUT_VMDK" "$OVA_STAGING/fedora-rawhide-disk1.vmdk"
+
+# Convert to Stream-Optimized VMDK directly inside staging area
+echo "Converting raw disk to stream-optimized VMDK..."
+qemu-img convert -O vmdk -o subformat=streamOptimized "$RAW_DISK" "$OVA_STAGING/fedora-rawhide-disk1.vmdk"
 
 VMDK_SIZE="$(stat -c %s "$OVA_STAGING/fedora-rawhide-disk1.vmdk")"
 
@@ -332,5 +327,4 @@ echo
 echo "=========================================================="
 echo " VMware build completed successfully!"
 echo " • OVA Appliance: $OUTPUT_OVA"
-echo " • VMDK Disk:     $OUTPUT_VMDK"
 echo "=========================================================="

@@ -129,11 +129,11 @@ This repository includes the build scripts used to generate the release artifact
   ```
   Emits `rawhide/Fedora-Rawhide-WSL.wsl`.
 
-- **VMware Workstation Pro (.ova & .vmdk)**:
+- **VMware Workstation Pro (.ova)**:
   ```bash
   ./rawhide/build-vmware.sh
   ```
-  Emits `rawhide/Fedora-Rawhide-VMware.ova` and `rawhide/Fedora-Rawhide-VMware.vmdk`.
+  Emits `rawhide/Fedora-Rawhide-VMware.ova`.
 
 -------------------------------------------------------
 License

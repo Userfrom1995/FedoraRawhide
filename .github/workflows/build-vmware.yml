@@ -27,7 +27,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: fedora-rawhide-vmware
-          path: |
-            rawhide/Fedora-Rawhide-VMware.ova
-            rawhide/Fedora-Rawhide-VMware.vmdk
+          path: rawhide/Fedora-Rawhide-VMware.ova
           if-no-files-found: error
