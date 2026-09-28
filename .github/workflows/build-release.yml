@@ -40,6 +40,7 @@ jobs:
         with:
           name: fedora-rawhide-wsl
           path: rawhide/Fedora-Rawhide-WSL.wsl
+          retention-days: 7
           if-no-files-found: error
 
   build-vmware:
@@ -61,6 +62,7 @@ jobs:
         with:
           name: fedora-rawhide-vmware
           path: rawhide/Fedora-Rawhide-VMware.ova
+          retention-days: 7
           if-no-files-found: error
 
   publish-release:
