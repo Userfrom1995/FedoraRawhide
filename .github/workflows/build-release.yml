@@ -14,7 +14,7 @@ jobs:
     container:
       image: fedora:rawhide
       options: --security-opt seccomp=unconfined
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
@@ -25,16 +25,21 @@ jobs:
           echo "date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
           echo "time=$(date +%H%M)" >> $GITHUB_OUTPUT
 
-      - name: Build Rawhide rootfs
+      - name: Build Rawhide WSL rootfs
         run: ./rawhide/build-rawhide.sh
+
+      - name: Build Rawhide VMware OVA
+        run: ./rawhide/build-vmware.sh
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: rawhide-${{ steps.timestamp.outputs.date }}-${{ steps.timestamp.outputs.time }}
           name: 'Fedora Rawhide ${{ steps.timestamp.outputs.date }} ${{ steps.timestamp.outputs.time }} UTC'
-          body: 'Weekly automated build of Fedora Rawhide for WSL.'
-          files: rawhide/Fedora-Rawhide-WSL.wsl
+          body: 'Weekly automated build of Fedora Rawhide for WSL and VMware Workstation Pro.'
+          files: |
+            rawhide/Fedora-Rawhide-WSL.wsl
+            rawhide/Fedora-Rawhide-VMware.ova
           draft: false
           prerelease: false
 

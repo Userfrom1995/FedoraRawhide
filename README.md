@@ -1,9 +1,9 @@
-Fedora Rawhide for WSL
-======================
+Fedora Rawhide for WSL & VMware
+===============================
 
-A ready-to-use Fedora Rawhide root filesystem for Windows Subsystem for Linux (WSL) 2. Install it, create your user, and you're running the latest Fedora.
+Ready-to-use Fedora Rawhide images for Windows Subsystem for Linux (WSL) 2 and VMware Workstation Pro. Install it, and you're running the latest Fedora.
 
-Fedora Rawhide is the rolling-development branch of Fedora. It always has the latest packages, but it moves fast. This project wraps it into a `.wsl` archive that stays current with a new automated build every week.
+Fedora Rawhide is the rolling-development branch of Fedora. It always has the latest packages, but it moves fast. This project wraps it into `.wsl` and `.ova` archives that stay current with a new automated build every week.
 
 -------------------------------------------------------
 Features
@@ -87,6 +87,19 @@ The image uses WSL's supported out-of-box experience (OOBE) flow:
 >The legacy `wsl --import` flow bypasses the OOBE experience and can still launch the distro as `root`. Use the `.wsl` installer flow shown above if you want the first-run user creation to work correctly.
 
 -------------------------------------------------------
+How to Use with VMware Workstation Pro
+-------------------------------------------------------
+
+1. Download `Fedora-Rawhide-VMware.ova` from GitHub Releases.
+2. In VMware Workstation Pro, click **File → Open...** (or double-click the `.ova` file).
+3. Choose a name and local folder for the VM and click **Import**.
+4. Power on the VM:
+   - **Default user**: `fedora`
+   - **Password**: `fedora` (passwordless sudo enabled)
+   - **Console autologin**: Automatically logs in to `tty1` on first boot.
+   - **VMware tools**: `open-vm-tools` is pre-installed for automatic display scaling, host clipboard sharing, and time sync.
+
+-------------------------------------------------------
 Releases
 -------------------------------------------------------
 
@@ -102,19 +115,25 @@ rawhide-2026-07-15-0600
 - **Older releases are deleted automatically** — only the last month of builds is kept.
 - **Manual builds** — the maintainer can trigger a build at any time from the Actions tab. A same-day build gets a unique time-stamped tag (e.g. `rawhide-2026-07-15-1430`).
 
-If you downloaded a `.wsl` file a while ago, just run `sudo dnf5 upgrade` after first boot to get the latest packages.
+If you downloaded an image a while ago, just run `sudo dnf5 upgrade` after first boot to get the latest packages.
 
 -------------------------------------------------------
 Transparency and Build Steps
 -------------------------------------------------------
 
-This repository also includes the build script used to generate the release artifact:
+This repository includes the build scripts used to generate the release artifacts:
 
-```bash
-./rawhide/build-rawhide.sh
-```
+- **WSL 2 (.wsl)**:
+  ```bash
+  ./rawhide/build-rawhide.sh
+  ```
+  Emits `rawhide/Fedora-Rawhide-WSL.wsl`.
 
-The script builds the root filesystem from Fedora Rawhide's rolling repository, applies the WSL overlay, and emits `rawhide/Fedora-Rawhide-WSL.wsl`.
+- **VMware Workstation Pro (.ova & .vmdk)**:
+  ```bash
+  ./rawhide/build-vmware.sh
+  ```
+  Emits `rawhide/Fedora-Rawhide-VMware.ova` and `rawhide/Fedora-Rawhide-VMware.vmdk`.
 
 -------------------------------------------------------
 License
