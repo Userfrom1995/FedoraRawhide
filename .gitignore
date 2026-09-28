@@ -2,4 +2,7 @@ rawhide/rootfs/
 .vscode/
 .specstory/
 rawhide/Fedora-Rawhide-WSL.wsl
+rawhide/Fedora-Rawhide-VMware.*
+rawhide/build-vmware-tmp/
 wsl-setup/
+*.png
