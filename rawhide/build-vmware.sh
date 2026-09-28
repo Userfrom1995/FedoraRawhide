@@ -117,6 +117,15 @@ $SUDO systemctl --root="$EXPORT_DIR" enable vmtoolsd.service 2>/dev/null || \
 $SUDO systemctl --root="$EXPORT_DIR" enable open-vm-tools.service 2>/dev/null || true
 $SUDO systemctl --root="$EXPORT_DIR" enable systemd-resolved.service 2>/dev/null || true
 
+# Ensure kernel binary exists in /boot
+echo "Ensuring kernel binary exists in /boot..."
+if [ ! -f "$EXPORT_DIR/boot/vmlinuz-${KVER}" ]; then
+    if [ -f "$EXPORT_DIR/lib/modules/${KVER}/vmlinuz" ]; then
+        echo "Copying kernel from /lib/modules/${KVER}/vmlinuz to /boot/vmlinuz-${KVER}..."
+        $SUDO cp -p "$EXPORT_DIR/lib/modules/${KVER}/vmlinuz" "$EXPORT_DIR/boot/vmlinuz-${KVER}"
+    fi
+fi
+
 # Generate generic (no-hostonly) initramfs with VMware storage/network drivers
 echo "Generating generic initramfs for VMware..."
 if $SUDO mount -t proc proc "$EXPORT_DIR/proc" 2>/dev/null; then
@@ -132,6 +141,22 @@ else
     echo "Notice: Container lacks mount permissions. Running dracut via --sysroot..."
     $SUDO dracut --sysroot "$EXPORT_DIR" --kver "$KVER" --force --no-hostonly "$EXPORT_DIR/boot/initramfs-${KVER}.img"
 fi
+
+# Verify kernel and initramfs exist
+if [ ! -f "$EXPORT_DIR/boot/vmlinuz-${KVER}" ]; then
+    echo "ERROR: /boot/vmlinuz-${KVER} not found! Build failed."
+    exit 1
+fi
+if [ ! -f "$EXPORT_DIR/boot/initramfs-${KVER}.img" ]; then
+    echo "ERROR: /boot/initramfs-${KVER}.img not found! Build failed."
+    exit 1
+fi
+
+# Copy kernel and initramfs to EFI System Partition for direct, zero-filesystem-dependency UEFI boot
+echo "Copying kernel and initramfs to EFI System Partition..."
+$SUDO mkdir -p "$EXPORT_DIR/boot/efi/EFI/fedora"
+$SUDO cp -p "$EXPORT_DIR/boot/vmlinuz-${KVER}" "$EXPORT_DIR/boot/efi/EFI/fedora/vmlinuz"
+$SUDO cp -p "$EXPORT_DIR/boot/initramfs-${KVER}.img" "$EXPORT_DIR/boot/efi/EFI/fedora/initramfs.img"
 
 # Generate filesystem UUIDs and /etc/fstab
 echo "Generating fstab..."
@@ -153,12 +178,18 @@ set default=0
 set timeout=3
 
 insmod part_gpt
-insmod ext2
 insmod fat
+insmod ext2
 
-search --no-floppy --fs-uuid --set=root ${ROOT_UUID}
-
+# Primary: boot directly from the EFI System Partition (guaranteed read by UEFI)
 menuentry "Fedora Rawhide" {
+    linux /EFI/fedora/vmlinuz root=UUID=${ROOT_UUID} ro quiet rhgb console=tty1
+    initrd /EFI/fedora/initramfs.img
+}
+
+# Fallback: search root partition
+menuentry "Fedora Rawhide (root partition /boot)" {
+    search --no-floppy --fs-uuid --set=root ${ROOT_UUID}
     linux /boot/vmlinuz-${KVER} root=UUID=${ROOT_UUID} ro quiet rhgb console=tty1
     initrd /boot/initramfs-${KVER}.img
 }
@@ -196,7 +227,7 @@ $SUDO rm -rf "$EXPORT_DIR/boot/efi"/*
 
 # 2. Format ext4 root partition (19.5 GB sparse)
 echo "Formatting ext4 root filesystem from rootfs..."
-$SUDO mke2fs -t ext4 -U "$ROOT_UUID" -d "$EXPORT_DIR" "$ROOT_IMG" 19960M
+$SUDO mke2fs -t ext4 -O ^orphan_file,^metadata_csum_seed -U "$ROOT_UUID" -d "$EXPORT_DIR" "$ROOT_IMG" 19960M
 $SUDO chown "$OWNER_UID:$OWNER_GID" "$ROOT_IMG"
 
 # 3. Create 20GB sparse raw disk image and partition with GPT
