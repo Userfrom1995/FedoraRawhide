@@ -319,14 +319,10 @@ EOF
 
 (
     cd "$OVA_STAGING"
-    OVF_HASH="$(sha256sum fedora-rawhide.ovf | awk '{print $1}')"
-    VMDK_HASH="$(sha256sum fedora-rawhide-disk1.vmdk | awk '{print $1}')"
-    cat <<EOF > fedora-rawhide.mf
-SHA256(fedora-rawhide.ovf)= ${OVF_HASH}
-SHA256(fedora-rawhide-disk1.vmdk)= ${VMDK_HASH}
-EOF
     rm -f "$OUTPUT_OVA"
-    tar -cf "$OUTPUT_OVA" fedora-rawhide.ovf fedora-rawhide.mf fedora-rawhide-disk1.vmdk
+    # DMTF OVF specification defines .mf as optional. Omitting it avoids
+    # VMware Workstation's known false-positive digest mismatch bug on import.
+    tar -cf "$OUTPUT_OVA" fedora-rawhide.ovf fedora-rawhide-disk1.vmdk
 )
 
 $SUDO chown "$OWNER_UID:$OWNER_GID" "$OUTPUT_OVA"
