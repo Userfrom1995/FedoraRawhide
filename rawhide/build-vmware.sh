@@ -38,6 +38,8 @@ command -v sfdisk >/dev/null 2>&1 || NEEDED_TOOLS+=(util-linux)
 command -v mkfs.vfat >/dev/null 2>&1 || NEEDED_TOOLS+=(dosfstools)
 command -v mcopy >/dev/null 2>&1 || NEEDED_TOOLS+=(mtools)
 command -v mke2fs >/dev/null 2>&1 || NEEDED_TOOLS+=(e2fsprogs)
+command -v openssl >/dev/null 2>&1 || NEEDED_TOOLS+=(openssl)
+command -v dracut >/dev/null 2>&1 || NEEDED_TOOLS+=(dracut)
 
 if [ "${#NEEDED_TOOLS[@]}" -gt 0 ]; then
     echo "Installing missing host tools: ${NEEDED_TOOLS[*]}..."
@@ -103,7 +105,8 @@ $SUDO chmod 0755 "$EXPORT_DIR/etc/profile.d/welcome-vmware.sh" 2>/dev/null || tr
 
 # Setup default fedora user with password fedora and sudo rights
 echo "Setting up default 'fedora' user..."
-FEDORA_PASS_HASH="$(openssl passwd -6 fedora)"
+# Pre-computed SHA-512 hash for password 'fedora' (salt: fedorarawhide)
+FEDORA_PASS_HASH='$6$fedorarawhide$g8CSA.Mo5L3OHWb82ndwQjUAQavXg2Buqu6dgY06bbaZoc1TaoSs/EUoOiXqTRx4CF.29.qLJMWjgyrAn/uel.'
 $SUDO chroot "$EXPORT_DIR" useradd -m -u 1000 -G wheel -s /bin/bash -p "$FEDORA_PASS_HASH" fedora 2>/dev/null || \
 $SUDO chroot "$EXPORT_DIR" usermod -p "$FEDORA_PASS_HASH" -aG wheel fedora
 $SUDO chroot "$EXPORT_DIR" usermod -p "$FEDORA_PASS_HASH" root

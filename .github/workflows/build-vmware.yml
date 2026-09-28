@@ -1,0 +1,33 @@
+name: Build VMware OVA (Test)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-vmware:
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:rawhide
+      options: --privileged
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Rawhide VMware OVA
+        run: ./rawhide/build-vmware.sh
+
+      - name: Upload VMware OVA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fedora-rawhide-vmware
+          path: |
+            rawhide/Fedora-Rawhide-VMware.ova
+            rawhide/Fedora-Rawhide-VMware.vmdk
+          if-no-files-found: error

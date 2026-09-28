@@ -9,20 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  init:
-    runs-on: ubuntu-latest
-    outputs:
-      date: ${{ steps.timestamp.outputs.date }}
-      time: ${{ steps.timestamp.outputs.time }}
-    steps:
-      - name: Get timestamp
-        id: timestamp
-        run: |
-          echo "date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
-          echo "time=$(date +%H%M)" >> $GITHUB_OUTPUT
-
-  build-wsl:
-    needs: init
+  build:
     runs-on: ubuntu-latest
     container:
       image: fedora:rawhide
@@ -32,80 +19,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Get timestamp
+        id: timestamp
+        run: |
+          echo "date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+          echo "time=$(date +%H%M)" >> $GITHUB_OUTPUT
+
       - name: Build Rawhide WSL rootfs
         run: ./rawhide/build-rawhide.sh
-
-      - name: Upload WSL artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: fedora-rawhide-wsl
-          path: rawhide/Fedora-Rawhide-WSL.wsl
-          if-no-files-found: error
-
-  build-vmware:
-    needs: init
-    runs-on: ubuntu-latest
-    container:
-      image: fedora:rawhide
-      options: --privileged
-    timeout-minutes: 60
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build Rawhide VMware OVA
-        run: ./rawhide/build-vmware.sh
-
-      - name: Upload VMware OVA artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: fedora-rawhide-vmware
-          path: rawhide/Fedora-Rawhide-VMware.ova
-          if-no-files-found: error
-
-  publish-release:
-    needs: [init, build-wsl, build-vmware]
-    if: always() && !cancelled() && (needs.build-wsl.result == 'success' || needs.build-vmware.result == 'success')
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Prepare release files and description
-        id: prep
-        run: |
-          mkdir -p release-files
-          BODY="Weekly automated build of Fedora Rawhide."
-
-          if [ -f artifacts/fedora-rawhide-wsl/Fedora-Rawhide-WSL.wsl ]; then
-            cp artifacts/fedora-rawhide-wsl/Fedora-Rawhide-WSL.wsl release-files/
-            BODY="$BODY"$'\n\n- **WSL 2 Package**: `Fedora-Rawhide-WSL.wsl` (included)'
-          else
-            BODY="$BODY"$'\n\n- **WSL 2 Package**: Failed to build in this cycle'
-          fi
-
-          if [ -f artifacts/fedora-rawhide-vmware/Fedora-Rawhide-VMware.ova ]; then
-            cp artifacts/fedora-rawhide-vmware/Fedora-Rawhide-VMware.ova release-files/
-            BODY="$BODY"$'\n- **VMware OVA Appliance**: `Fedora-Rawhide-VMware.ova` (included)'
-          else
-            BODY="$BODY"$'\n- **VMware OVA Appliance**: Failed to build in this cycle'
-          fi
-
-          echo "body<<EOF" >> $GITHUB_OUTPUT
-          echo "$BODY" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: rawhide-${{ needs.init.outputs.date }}-${{ needs.init.outputs.time }}
-          name: 'Fedora Rawhide ${{ needs.init.outputs.date }} ${{ needs.init.outputs.time }} UTC'
-          body: ${{ steps.prep.outputs.body }}
-          files: release-files/*
+          tag_name: rawhide-${{ steps.timestamp.outputs.date }}-${{ steps.timestamp.outputs.time }}
+          name: 'Fedora Rawhide ${{ steps.timestamp.outputs.date }} ${{ steps.timestamp.outputs.time }} UTC'
+          body: 'Weekly automated build of Fedora Rawhide for WSL.'
+          files: rawhide/Fedora-Rawhide-WSL.wsl
           draft: false
           prerelease: false
 
@@ -143,9 +72,3 @@ jobs:
               }
             }
             console.log(`Cleaned up ${deleted} releases older than 1 month`);
-
-      - name: Check overall build results
-        if: needs.build-wsl.result != 'success' || needs.build-vmware.result != 'success'
-        run: |
-          echo "WARNING: One of the builds did not complete successfully (WSL: ${{ needs.build-wsl.result }}, VMware: ${{ needs.build-vmware.result }})."
-          exit 1
