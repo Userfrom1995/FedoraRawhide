@@ -77,7 +77,7 @@ $SUDO dnf5 install --installroot="$EXPORT_DIR" \
   @core sudo passwd shadow-utils util-linux dnf5 iputils cracklib-dicts \
   wget tar gzip findutils which procps-ng \
   dbus-broker dbus-daemon polkit systemd-pam \
-  kernel-core kernel-modules dracut grub2-efi-x64 shim-x64 efibootmgr \
+  kernel-core kernel-modules kernel-modules-extra dracut grub2-efi-x64 shim-x64 efibootmgr \
   open-vm-tools NetworkManager dosfstools e2fsprogs
 
 # Verify essential files
