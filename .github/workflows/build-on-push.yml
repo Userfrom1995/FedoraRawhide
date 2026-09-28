@@ -1,15 +1,34 @@
-name: Build VMware OVA (Test)
+name: Build (on push)
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  build-wsl:
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:rawhide
+      options: --security-opt seccomp=unconfined
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Rawhide WSL rootfs
+        run: ./rawhide/build-rawhide.sh
+
+      - name: Upload WSL artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fedora-rawhide-wsl
+          path: rawhide/Fedora-Rawhide-WSL.wsl
+          if-no-files-found: error
+
   build-vmware:
     runs-on: ubuntu-latest
     container:
